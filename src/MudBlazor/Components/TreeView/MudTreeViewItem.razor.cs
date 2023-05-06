@@ -1,3 +1,4 @@
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -163,6 +164,7 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.TreeView.ClickAction)]
+        [Obsolete($"Use {nameof(OnClick)} instead. This will be removed in v7.")]
         public ICommand Command { get; set; }
 
         /// <summary>
@@ -330,11 +332,6 @@ namespace MudBlazor
 
         protected async Task OnItemClicked(MouseEventArgs ev)
         {
-            if (MudTreeRoot?.IsSelectable ?? false)
-            {
-                await MudTreeRoot.UpdateSelected(this, !_isSelected);
-            }
-
             if (HasChild && (MudTreeRoot?.ExpandOnClick ?? false))
             {
                 Expanded = !Expanded;
@@ -342,20 +339,27 @@ namespace MudBlazor
                 await ExpandedChanged.InvokeAsync(Expanded);
             }
 
-            await OnClick.InvokeAsync(ev);
-            if (Command?.CanExecute(Value) ?? false)
+            if (Disabled)
             {
-                Command.Execute(Value);
+                return;
             }
-        }
 
-        protected async Task OnItemDoubleClicked(MouseEventArgs ev)
-        {
             if (MudTreeRoot?.IsSelectable ?? false)
             {
                 await MudTreeRoot.UpdateSelected(this, !_isSelected);
             }
 
+            await OnClick.InvokeAsync(ev);
+#pragma warning disable CS0618
+            if (Command?.CanExecute(Value) ?? false)
+            {
+                Command.Execute(Value);
+            }
+#pragma warning restore CS0618
+        }
+
+        protected async Task OnItemDoubleClicked(MouseEventArgs ev)
+        {
             if (HasChild && (MudTreeRoot?.ExpandOnDoubleClick ?? false))
             {
                 Expanded = !Expanded;
@@ -363,8 +367,19 @@ namespace MudBlazor
                 await ExpandedChanged.InvokeAsync(Expanded);
             }
 
+            if (Disabled)
+            {
+                return;
+            }
+
+            if (MudTreeRoot?.IsSelectable ?? false)
+            {
+                await MudTreeRoot.UpdateSelected(this, !_isSelected);
+            }
+
             await OnDoubleClick.InvokeAsync(ev);
         }
+
         protected internal async Task OnItemExpanded(bool expanded)
         {
             if (Expanded != expanded) {
