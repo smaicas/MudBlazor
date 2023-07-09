@@ -2,6 +2,8 @@
 @inherits MudComponentBase
 @typeparam T
 
+@inject InternalMudLocalizer Localizer
+
 @if (Column != null && !Column.Hidden)
 {
     <th scope="col" class="@_classname" style="@_style" colspan="@Column?.HeaderColSpan" @attributes="@UserAttributes">
@@ -14,11 +16,11 @@
             <MudStack Row="true">
                 @if (dataType == typeof(string) && !(_operator ?? "").EndsWith("empty"))
                 {
-                    <MudTextField T="string" Value="@_valueString" ValueChanged="@StringValueChangedAsync" FullWidth="true" Placeholder="Filter value" Margin="@Margin.Dense" Immediate="true" DebounceInterval="@(DataGrid.ServerData is null ? 0 : 500.0)" />
+                    <MudTextField T="string" Value="@_valueString" ValueChanged="@StringValueChangedAsync" FullWidth="true" Placeholder="@Localizer["MudDataGrid.FilterValue"]" Margin="@Margin.Dense" Immediate="true" DebounceInterval="@(DataGrid.ServerData is null ? 0 : 500.0)" />
                 }
                 else if (isNumber && !(_operator ?? "").EndsWith("empty"))
                 {
-                    <MudNumericField T="double?" Culture="@Column.Culture" Value="@_valueNumber" ValueChanged="@NumberValueChangedAsync" FullWidth="true" Placeholder="Filter value" Margin="@Margin.Dense" Immediate="true" DebounceInterval="@(DataGrid.ServerData is null ? 0 : 500.0)" />
+                    <MudNumericField T="double?" Culture="@Column.Culture" Value="@_valueNumber" ValueChanged="@NumberValueChangedAsync" FullWidth="true" Placeholder="@Localizer["MudDataGrid.FilterValue"]" Margin="@Margin.Dense" Immediate="true" DebounceInterval="@(DataGrid.ServerData is null ? 0 : 500.0)" />
                 }
                 else if (isEnum)
                 {
@@ -34,8 +36,8 @@
                 {
                     <MudSelect T="bool?" Value="@_valueBool" ValueChanged="@BoolValueChangedAsync" FullWidth="true" Dense="true" Margin="@Margin.Dense">
                         <MudSelectItem T="bool?" Value="@(null)"></MudSelectItem>
-                        <MudSelectItem T="bool?" Value="@(true)">true</MudSelectItem>
-                        <MudSelectItem T="bool?" Value="@(false)">false</MudSelectItem>
+                        <MudSelectItem T="bool?" Value="@(true)">@Localizer["MudDataGrid.True"]</MudSelectItem>
+                        <MudSelectItem T="bool?" Value="@(false)">@Localizer["MudDataGrid.False"]</MudSelectItem>
                     </MudSelect>
                 }
                 else if (dataType == typeof(DateTime) && !(_operator ?? "").EndsWith("empty"))
@@ -48,32 +50,13 @@
                             <MudTimePicker Time="@_valueTime" TimeChanged="@TimeValueChangedAsync" Margin="@Margin.Dense" />
                         </MudItem>
                     </MudGrid>
-                }
-                else if (dataType == typeof(bool))
-                {
-                    <MudSelect T="bool?" Value="@_valueBool" ValueChanged="@BoolValueChangedAsync" FullWidth="true" Dense="true" Margin="@Margin.Dense">
-                        <MudSelectItem T="bool?" Value="@(null)"></MudSelectItem>
-                        <MudSelectItem T="bool?" Value="@(true)">true</MudSelectItem>
-                        <MudSelectItem T="bool?" Value="@(false)">false</MudSelectItem>
-                    </MudSelect>
-                }
-                else if (dataType == typeof(DateTime) && !(_operator ?? "").EndsWith("empty"))
-                {
-                    <MudGrid Spacing="0">
-                        <MudItem xs="7">
-                            <MudDatePicker Date="@_valueDate" DateChanged="@DateValueChangedAsync" Margin="@Margin.Dense" />
-                        </MudItem>
-                        <MudItem xs="5">
-                            <MudTimePicker Time="@_valueTime" TimeChanged="@TimeValueChangedAsync" Margin="@Margin.Dense" />
-                        </MudItem>
-                    </MudGrid>
-                }
+                }                
                 <MudMenu Icon="@Icons.Material.Filled.FilterAlt" Size="@Size.Small" Dense="true">
                     @foreach (var o in operators)
                     {
                         if (!string.IsNullOrWhiteSpace(o))
                         {
-                            <MudMenuItem Style="@chosenOperatorStyle(o)" OnClick="@(async () => await ChangeOperatorAsync(o))">@o</MudMenuItem>
+                            <MudMenuItem Style="@chosenOperatorStyle(o)" OnClick="@(async () => await ChangeOperatorAsync(o))">@Localizer[$"MudDataGrid.{o}"]</MudMenuItem>
                         }
                     }
                 </MudMenu>

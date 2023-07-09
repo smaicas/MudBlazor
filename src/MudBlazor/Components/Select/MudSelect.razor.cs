@@ -7,11 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
-using MudBlazor.Services;
-using MudBlazor.Utilities;
-using MudBlazor.Utilities.Exceptions;
 
 namespace MudBlazor
 {
@@ -1052,15 +1047,19 @@ namespace MudBlazor
             _shadowLookup.Remove(item.Value);
         }
 
-        internal void OnLostFocus(FocusEventArgs obj)
+        private async Task OnFocusOutAsync(FocusEventArgs focusEventArgs)
         {
             if (_isOpen)
             {
                 // when the menu is open we immediately get back the focus if we lose it (i.e. because of checkboxes in multi-select)
                 // otherwise we can't receive key strokes any longer
-                _elementReference.FocusAsync().AndForget(ignoreExceptions: true);
+                await FocusAsync();
             }
-            base.OnBlur.InvokeAsync(obj);
+        }
+
+        internal Task OnBlurAsync(FocusEventArgs obj)
+        {
+            return base.OnBlur.InvokeAsync(obj);
         }
 
         protected override void Dispose(bool disposing)

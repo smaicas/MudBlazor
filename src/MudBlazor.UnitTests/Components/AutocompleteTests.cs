@@ -139,7 +139,7 @@ namespace MudBlazor.UnitTests.Components
             // set a value the search won't find
             autocompletecomp.SetParam(a => a.Text, "Austria"); // not part of the U.S.
             // IsOpen must be true to properly simulate a user clicking outside of the component, which is what the next ToggleMenu call below does.
-            autocomplete.IsOpen.Should().BeTrue();
+            autocompletecomp.WaitForAssertion(() => autocomplete.IsOpen.Should().BeTrue());
             // now trigger the coercion by closing the menu
             await comp.InvokeAsync(() => autocomplete.ToggleMenu());
             autocomplete.Value.Should().Be("Alabama");
@@ -167,6 +167,29 @@ namespace MudBlazor.UnitTests.Components
 
             // now trigger the coercion by toggling the the menu (it won't even open for invalid values, but it will coerce)
             await comp.InvokeAsync(() => autocomplete.ToggleMenu());
+            comp.WaitForAssertion(() => autocomplete.Value.Should().Be("Austria"));
+            autocomplete.Text.Should().Be("Austria");
+        }
+        
+        /// <summary>
+        /// Test to cover issue #5993.
+        /// </summary>
+        [Test]
+        public async Task AutocompleteImmediateCoerceValueTest()
+        {
+            var comp = Context.RenderComponent<AutocompleteTest1>();
+            var autocompletecomp = comp.FindComponent<MudAutocomplete<string>>();
+            var autocomplete = autocompletecomp.Instance;
+            autocompletecomp.SetParam(x => x.DebounceInterval, 0);
+            autocompletecomp.SetParam(x => x.CoerceValue, true);
+            autocompletecomp.SetParam(x => x.CoerceText, false);
+            autocompletecomp.SetParam(x => x.Immediate, true);
+            // check initial state
+            autocomplete.Value.Should().Be("Alabama");
+            autocomplete.Text.Should().Be("Alabama");
+            // set a value the search won't find
+            autocompletecomp.SetParam(p => p.Text, "Austria"); // not part of the U.S.
+            
             comp.WaitForAssertion(() => autocomplete.Value.Should().Be("Austria"));
             autocomplete.Text.Should().Be("Austria");
         }

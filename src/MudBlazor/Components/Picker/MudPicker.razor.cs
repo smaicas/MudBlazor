@@ -21,8 +21,6 @@ namespace MudBlazor
 
         private string _elementId = "picker" + Guid.NewGuid().ToString().Substring(0, 8);
 
-        [Inject] private IBrowserWindowSizeProvider WindowSizeListener { get; set; }
-
         protected string PickerClass =>
             new CssBuilder("mud-picker")
                 .AddClass($"mud-picker-inline", PickerVariant != PickerVariant.Static)
@@ -271,6 +269,12 @@ namespace MudBlazor
         public EventCallback<string> TextChanged { get; set; }
 
         /// <summary>
+        /// Fired when the text input is clicked.
+        /// </summary>
+        [Parameter]
+        public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+        /// <summary>
         /// The currently selected string value (two-way bindable)
         /// </summary>
         [Parameter]
@@ -477,6 +481,15 @@ namespace MudBlazor
             }
         }
 
+        private async Task OnClickAsync(MouseEventArgs args)
+        {
+            if (!Editable)
+                ToggleState();
+
+            if (OnClick.HasDelegate)
+                await OnClick.InvokeAsync(args);
+        }
+
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender == true)
@@ -571,6 +584,8 @@ namespace MudBlazor
 
             }
         }
+
+
 
     }
 }

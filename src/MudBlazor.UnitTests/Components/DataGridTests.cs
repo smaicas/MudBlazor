@@ -266,6 +266,36 @@ namespace MudBlazor.UnitTests.Components
         }
 
         [Test]
+        public async Task DataGridSingleSelectionTest()
+        {
+            var comp = Context.RenderComponent<DataGridSingleSelectionTest>();
+            var dataGrid = comp.FindComponent<MudDataGrid<DataGridSingleSelectionTest.Item>>();
+
+            dataGrid.Instance.SelectedItems.Count.Should().Be(0);
+
+            // select first item programmatically
+            var firstItem = dataGrid.Instance.Items.ElementAt(0);
+            await comp.InvokeAsync(async () => await dataGrid.Instance.SetSelectedItemAsync(true, firstItem));
+            dataGrid.Instance.SelectedItems.Count.Should().Be(1);
+            dataGrid.Instance.SelectedItem.Should().Be(firstItem);
+
+            // select second item programmatically (still should be only one item selected)
+            var secondItem = dataGrid.Instance.Items.ElementAt(1);
+            await comp.InvokeAsync(async () => await dataGrid.Instance.SetSelectedItemAsync(true, secondItem));
+            dataGrid.Instance.SelectedItems.Count.Should().Be(1);
+            dataGrid.Instance.SelectedItem.Should().Be(secondItem);
+
+            // deselect an item programmatically
+            await comp.InvokeAsync(async () => await dataGrid.Instance.SetSelectedItemAsync(false, secondItem));
+            dataGrid.Instance.SelectedItems.Count.Should().Be(0);
+            dataGrid.Instance.SelectedItem.Should().BeNull();
+
+            // nothing should happen as the "select all" shouldn't do anything in single selection mode
+            dataGrid.FindAll("input")[0].Change(true);
+            dataGrid.Instance.SelectedItems.Count.Should().Be(0);
+        }
+
+        [Test]
         public async Task DataGridMultiSelectionTest()
         {
             var comp = Context.RenderComponent<DataGridMultiSelectionTest>();
@@ -295,7 +325,7 @@ namespace MudBlazor.UnitTests.Components
             dataGrid.Find("tfoot input").Change(false);
             dataGrid.Instance.SelectedItems.Count.Should().Be(0);
         }
-        
+
         [Test]
         public async Task DataGridServerMultiSelectionTest()
         {
@@ -456,7 +486,8 @@ namespace MudBlazor.UnitTests.Components
 
             //open edit dialog
             dataGrid.FindAll("tbody tr")[1].Click();
-
+            //No close button
+            comp.FindAll("button[aria-label=\"close\"]").Should().BeEmpty();
             //edit data
             comp.FindAll("div input")[0].Change("Galadriel");
             comp.FindAll("div input")[1].Change(1);
@@ -2542,6 +2573,27 @@ namespace MudBlazor.UnitTests.Components
         }
 
         [Test]
+        public async Task FilterDefinitionReplaceWithCustom()
+        {
+            var comp = Context.RenderComponent<DataGridFiltersTest>();
+            var dataGrid = comp.FindComponent<MudDataGrid<DataGridFiltersTest.Model>>();
+            dataGrid.Instance.SetDefaultFilterDefinition<CustomFilterDefinitionMock<DataGridFiltersTest.Model>>();
+
+            await comp.InvokeAsync(() => dataGrid.Instance.OpenFilters());
+
+            // add a filter via the AddFilter method
+            await comp.InvokeAsync(() => dataGrid.Instance.AddFilter());
+
+            // check the number of filters displayed in the filters panel
+            dataGrid.FindAll(".filters-panel .mud-grid-item.d-flex").Count.Should().Be(1);
+
+            var filterDefinitionInstance = dataGrid.Instance.FilterDefinitions.FirstOrDefault();
+            dataGrid.Instance.FilterDefinitions.Count.Should().Be(1);
+            filterDefinitionInstance.Should().NotBeNull();
+            filterDefinitionInstance.Should().BeOfType<CustomFilterDefinitionMock<DataGridFiltersTest.Model>>();
+        }
+
+        [Test]
         public async Task DataGridFiltersTest()
         {
             var comp = Context.RenderComponent<DataGridFiltersTest>();
@@ -3055,6 +3107,18 @@ namespace MudBlazor.UnitTests.Components
         }
 
         [Test]
+        public async Task DataGridFilterableFalseTest()
+        {
+            var comp = Context.RenderComponent<DataGridFilterableFalseTest>();
+
+            comp.Find(".filter-button").Click();
+            comp.FindAll(".filters-panel").Count.Should().Be(1);
+
+            comp.FindAll("div.mud-input-control")[0].Click();
+            comp.FindAll("div.mud-list-item").Count.Should().Be(3);
+        }
+
+        [Test]
         public async Task DataGridColumnPopupCustomFilteringTest()
         {
             var comp = Context.RenderComponent<DataGridColumnPopupCustomFilteringTest>();
@@ -3159,6 +3223,28 @@ namespace MudBlazor.UnitTests.Components
         {
             var comp = Context.RenderComponent<DataGridStickyColumnsTest>();
             var dataGrid = comp.FindComponent<MudDataGrid<DataGridStickyColumnsTest.Model>>();
+
+            dataGrid.Find("th").ClassList.Should().Contain("sticky-left");
+            dataGrid.FindAll("th").Last().ClassList.Should().Contain("sticky-right");
+        }
+
+        [Test]
+        public async Task DataGridStickyColumnsResizerTest()
+        {
+            var comp = Context.RenderComponent<DataGridStickyColumnsResizerTest>();
+            var dataGrid = comp.FindComponent<MudDataGrid<DataGridStickyColumnsResizerTest.Model>>();
+
+            var header = dataGrid.Find(".mud-table-toolbar");
+            header.GetAttribute("style").Should().Contain("position:sticky");
+            header.GetAttribute("style").Should().Contain("left:0px");
+
+            var footer = dataGrid.Find(".mud-table-pagination");
+            footer.GetAttribute("style").Should().Contain("position:sticky");
+            footer.GetAttribute("style").Should().Contain("left:0px");
+
+            var body = dataGrid.Find(".mud-table-container");
+            body.GetAttribute("style").Should().Contain("width:max-content");
+            body.GetAttribute("style").Should().Contain("overflow:clip");
 
             dataGrid.Find("th").ClassList.Should().Contain("sticky-left");
             dataGrid.FindAll("th").Last().ClassList.Should().Contain("sticky-right");
@@ -3581,12 +3667,12 @@ namespace MudBlazor.UnitTests.Components
             comp.Instance.CollapseAllGroups();
             dataGrid.Render();
             // after all groups are collapsed
-            comp.FindAll("tbody .mud-table-row").Count.Should().Be(2);
+            comp.WaitForAssertion(() => comp.FindAll("tbody .mud-table-row").Count.Should().Be(2));
             await comp.InvokeAsync(() =>
                 comp.Instance.AddFruit());
             // datagrid should be expanded with the new category
             dataGrid.Render();
-            comp.FindAll("tbody .mud-table-row").Count.Should().Be(3);
+            comp.WaitForAssertion(() => comp.FindAll("tbody .mud-table-row").Count.Should().Be(3));
         }
 
         [Test]
@@ -3599,12 +3685,11 @@ namespace MudBlazor.UnitTests.Components
             comp.Instance.CollapseAllGroups();
             dataGrid.Render();
             // after all groups are collapsed
-            comp.FindAll("tbody .mud-table-row").Count.Should().Be(2);
-            await comp.InvokeAsync(() =>
-                comp.Instance.AddFruit());
+            comp.WaitForAssertion(() => comp.FindAll("tbody .mud-table-row").Count.Should().Be(2));
+            await comp.InvokeAsync(() => comp.Instance.AddFruit());
             // datagrid should be expanded with the new category
             dataGrid.Render();
-            comp.FindAll("tbody .mud-table-row").Count.Should().Be(3);
+            comp.WaitForAssertion(() => comp.FindAll("tbody .mud-table-row").Count.Should().Be(3));
         }
 
         [Test]
@@ -3750,6 +3835,23 @@ namespace MudBlazor.UnitTests.Components
             newHeaderValues[4].InnerHtml.Should().Be("HiredOn");
 
         }
-    
+        [Test]
+        public void DataGridEditFormDialogIsCustomizableTest()
+        {
+            var comp = Context.RenderComponent<DataGridEditFormCustomizedDialogTest>();
+            var dataGrid = comp.FindComponent<MudDataGrid<DataGridEditFormCustomizedDialogTest.Model>>();
+
+            //open edit dialog
+            dataGrid.FindAll("tbody tr")[1].Click();
+            //check if dialog is open
+            comp.FindAll("div.mud-dialog-container").Should().NotBeEmpty();
+            //find button with arialabel close in dialog
+            var closeButton = comp.Find("button[aria-label=\"close\"]");
+            closeButton.Should().NotBeNull();
+            //click close button
+            comp.Find("button[aria-label=\"close\"]").Click();
+            //check if dialog is closed
+            comp.FindAll("div.mud-dialog-container").Should().BeEmpty();
+        }
     }
 }
